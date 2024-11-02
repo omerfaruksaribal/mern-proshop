@@ -1,6 +1,8 @@
 import React from 'react';
 import { Navbar, Nav, Container } from 'react-bootstrap';
 import { FaShoppingCart, FaUser } from 'react-icons/fa';
+import logo from '../assets/logo.png';
+import '../global.d.ts';
 
 const Header = () => {
   return (
@@ -12,7 +14,10 @@ const Header = () => {
         collapseOnSelect
       >
         <Container>
-          <Navbar.Brand href="/">ProShop</Navbar.Brand>
+          <Navbar.Brand href="/" className="flex flex-row">
+            <img src={logo ? logo : ''} alt="ProShop" />
+            <span className="mt-2">ProShop</span>
+          </Navbar.Brand>
           <Navbar.Toggle aria-controls="basic-navbar-nav" />
           <Navbar.Collapse id="basic-navbar-nav">
             <Nav className="flex items-center justify-center ms-auto">
