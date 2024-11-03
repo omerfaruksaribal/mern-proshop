@@ -1,5 +1,6 @@
 import React from 'react';
 import { Container } from 'react-bootstrap';
+import { Outlet } from 'react-router-dom';
 
 import Header from './components/Header.tsx';
 import Footer from './components/Footer.tsx';
@@ -10,9 +11,7 @@ const App = () => {
       <Header />
       <main className="py-3">
         <Container>
-          <h1 className="flex justify-center mt-10 text-3xl text-blue-800">
-            Tailwind setup test
-          </h1>
+          <Outlet />
         </Container>
       </main>
       <Footer />
