@@ -4,13 +4,12 @@ import { FaShoppingCart, FaUser } from 'react-icons/fa';
 import { LinkContainer } from 'react-router-bootstrap';
 
 import logo from '../assets/logo.png';
-import '../global.d.ts';
 
 const Header = () => {
   return (
     <header>
       <Navbar
-        className="bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-sky-400 to-blue-800"
+        className="bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-amber-600 to-red-600"
         variant="dark"
         expand="md"
         collapseOnSelect

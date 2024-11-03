@@ -4,7 +4,7 @@ import { Container, Row, Col } from 'react-bootstrap';
 const Footer = () => {
   const currentYear = new Date().getFullYear();
   return (
-    <footer className="bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-sky-400 to-blue-800">
+    <footer className="bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-amber-600 to-red-600">
       <Container>
         <Row>
           <Col className="py-3 text-center">

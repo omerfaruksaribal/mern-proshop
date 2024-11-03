@@ -1,20 +1,24 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Link } from 'react-router-dom';
 import { Row, Col, Image, ListGroup, Card, Button } from 'react-bootstrap';
 import { FaHome } from 'react-icons/fa';
+import axios from 'axios';
 
-import Rating from '../components/Rating.tsx';
-import products from '../products.js';
+import Rating from '../components/Rating';
 
 const ProductScreen = () => {
-  const { id: productId } = useParams();
-  const product = products.find((p) => p._id === productId);
+  const [product, setProduct] = useState({});
 
-  if (!product) {
-    console.log('Something went wrong');
-    return null;
-  }
+  const { id: productId } = useParams();
+
+  useEffect(() => {
+    const fetchProduct = async () => {
+      const { data } = await axios.get(`/api/products/${productId}`);
+      setProduct(data);
+    };
+    fetchProduct();
+  }, [productId]);
 
   return (
     <div>
@@ -70,7 +74,7 @@ const ProductScreen = () => {
               </ListGroup.Item>
               <ListGroup.Item className="py-3">
                 <Button
-                  className="btn btn-block w-100 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-sky-400 to-blue-800 hover:from-blue-500 hover:to-sky-600"
+                  className="btn btn-block w-100 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-yellow-300 to-yellow-500 hover:from-yellow-500 hover:to-yellow-300"
                   type="button"
                   disabled={product.countInStock === 0}
                 >
@@ -87,7 +91,7 @@ const ProductScreen = () => {
         <Col className="d-flex justify-content-center">
           <Link
             to="/"
-            className="flex justify-center items-center w-24 h-12 rounded-lg text-white bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-sky-400 to-blue-800 hover:from-blue-500 hover:to-sky-600"
+            className="flex justify-center items-center w-24 h-12 rounded-lg text-white bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-yellow-300 to-yellow-500 hover:from-yellow-500 hover:to-yellow-300"
           >
             <FaHome className="mr-1" />
             Go back

@@ -2,22 +2,9 @@ import React from 'react';
 import { Card } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 
-import Rating from './Rating.tsx';
+import Rating from './Rating';
 
-interface ProductProps {
-  _id: string;
-  name: string;
-  image: string;
-  description: string;
-  brand: string;
-  category: string;
-  price: number;
-  countInStock: number;
-  rating: number;
-  numReviews: number;
-}
-
-const Product = ({ product }: { product: ProductProps }) => {
+const Product = ({ product }) => {
   return (
     <Card className="p-3 my-3 rounded">
       <Link to={`/product/${product._id}`}>

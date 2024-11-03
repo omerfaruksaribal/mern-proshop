@@ -11,8 +11,8 @@ import './assets/styles/bootstrap.custom.css';
 import './assets/styles/index.css';
 import App from './App.js';
 import reportWebVitals from './reportWebVitals.js';
-import HomeScreen from './screens/HomeScreen.tsx';
-import ProductScreen from './screens/ProductScreen.tsx';
+import HomeScreen from './screens/HomeScreen';
+import ProductScreen from './screens/ProductScreen';
 
 const router = createBrowserRouter(
   createRoutesFromElements(
