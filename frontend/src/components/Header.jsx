@@ -1,41 +1,36 @@
 import React from 'react';
-import { Navbar, Nav, Container } from 'react-bootstrap';
+import { Navbar, Nav, Container, Badge } from 'react-bootstrap';
 import { FaShoppingCart, FaUser } from 'react-icons/fa';
-import { LinkContainer } from 'react-router-bootstrap';
+import { useSelector } from 'react-redux';
 
 import logo from '../assets/logo.png';
+import { Link } from 'react-router-dom';
 
 const Header = () => {
+  const { cartItems } = useSelector((state) => state.cart);
+
   return (
     <header>
-      <Navbar
-        className="bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-amber-600 to-red-600"
-        variant="dark"
-        expand="md"
-        collapseOnSelect
-      >
+      <Navbar bg="primary" variant="dark" expand="lg" collapseOnSelect>
         <Container>
-          <LinkContainer to="">
-            <Navbar.Brand className="flex flex-row">
-              <img src={logo ? logo : ''} alt="ProShop" />
-              <span className="mt-2">ProShop</span>
-            </Navbar.Brand>
-          </LinkContainer>
+          <Navbar.Brand as={Link} to="/">
+            <img src={logo} alt="ProShop" />
+            ProShop
+          </Navbar.Brand>
           <Navbar.Toggle aria-controls="basic-navbar-nav" />
           <Navbar.Collapse id="basic-navbar-nav">
-            <Nav className="flex items-center justify-center ms-auto">
-              <LinkContainer to="/cart">
-                <Nav.Link className="flex flex-auto">
-                  <FaShoppingCart className="mt-1 mr-2" />
-                  Cart
-                </Nav.Link>
-              </LinkContainer>
-              <LinkContainer to="/login">
-                <Nav.Link className="flex flex-auto">
-                  <FaUser className="mt-1 mr-2 " />
-                  Login
-                </Nav.Link>
-              </LinkContainer>
+            <Nav className="ms-auto">
+              <Nav.Link as={Link} to="/cart">
+                <FaShoppingCart /> Cart
+                {cartItems.length > 0 && (
+                  <Badge pill bg="success" style={{ marginLeft: '5px' }}>
+                    {cartItems.reduce((a, c) => a + c.qty, 0)}
+                  </Badge>
+                )}
+              </Nav.Link>
+              <Nav.Link as={Link} to="/login">
+                <FaUser /> Sign In
+              </Nav.Link>
             </Nav>
           </Navbar.Collapse>
         </Container>

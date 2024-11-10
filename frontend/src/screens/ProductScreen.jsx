@@ -1,7 +1,18 @@
-import { useParams } from 'react-router-dom';
+import { useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Link } from 'react-router-dom';
-import { Row, Col, Image, ListGroup, Card, Button } from 'react-bootstrap';
+import {
+  Row,
+  Col,
+  Image,
+  ListGroup,
+  Card,
+  Button,
+  Form,
+} from 'react-bootstrap';
 import { FaHome } from 'react-icons/fa';
+import { addToCart } from '../slices/cartSlice';
+import { useDispatch } from 'react-redux';
 
 import Rating from '../components/Rating';
 import { useGetProductDetailsQuery } from '../slices/productApiSlice';
@@ -11,14 +22,27 @@ import Message from '../components/Message';
 const ProductScreen = () => {
   const { id: productId } = useParams();
 
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+
+  const [qty, setQty] = useState(1);
+
   const {
     data: product,
     error,
     isLoading,
   } = useGetProductDetailsQuery(productId);
 
+  const addToCartHandler = () => {
+    dispatch(addToCart({ ...product, qty }));
+    navigate('/cart');
+  };
+
   return (
     <>
+      <Link className="my-3 btn btn-light" to="/">
+        Go Back
+      </Link>
       {isLoading ? (
         <Loader />
       ) : error ? (
@@ -36,19 +60,11 @@ const ProductScreen = () => {
         </>
       ) : (
         <>
-          <Row className="gy-4">
-            {/* Left Column - Image */}
-            <Col md={6} lg={4} className="d-flex justify-content-center">
-              <Image
-                src={product.image}
-                alt={product.name}
-                fluid
-                className="border border-black border-solid rounded-md"
-              />
+          <Row>
+            <Col md={6}>
+              <Image src={product.image} alt={product.name} fluid />
             </Col>
-
-            {/* Center Column - Product Details */}
-            <Col md={6} lg={5}>
+            <Col md={3}>
               <ListGroup variant="flush">
                 <ListGroup.Item>
                   <h3>{product.name}</h3>
@@ -65,12 +81,10 @@ const ProductScreen = () => {
                 </ListGroup.Item>
               </ListGroup>
             </Col>
-
-            {/* Right Column - Card Component */}
-            <Col lg={3} md={6} className="d-flex justify-content-center">
-              <Card className="w-100 h-100">
+            <Col md={3}>
+              <Card>
                 <ListGroup variant="flush">
-                  <ListGroup.Item className="py-3">
+                  <ListGroup.Item>
                     <Row>
                       <Col>Price:</Col>
                       <Col>
@@ -78,42 +92,51 @@ const ProductScreen = () => {
                       </Col>
                     </Row>
                   </ListGroup.Item>
-                  <ListGroup.Item className="py-3">
+                  <ListGroup.Item>
                     <Row>
                       <Col>Status:</Col>
                       <Col>
-                        <strong>
-                          {product.countInStock > 0
-                            ? 'In Stock'
-                            : 'Out of Stock'}
-                        </strong>
+                        {product.countInStock > 0 ? 'In Stock' : 'Out Of Stock'}
                       </Col>
                     </Row>
                   </ListGroup.Item>
-                  <ListGroup.Item className="py-3">
+
+                  {/* Qty Select */}
+                  {product.countInStock > 0 && (
+                    <ListGroup.Item>
+                      <Row>
+                        <Col>Qty</Col>
+                        <Col>
+                          <Form.Control
+                            as="select"
+                            value={qty}
+                            onChange={(e) => setQty(Number(e.target.value))}
+                          >
+                            {[...Array(product.countInStock).keys()].map(
+                              (x) => (
+                                <option key={x + 1} value={x + 1}>
+                                  {x + 1}
+                                </option>
+                              )
+                            )}
+                          </Form.Control>
+                        </Col>
+                      </Row>
+                    </ListGroup.Item>
+                  )}
+
+                  <ListGroup.Item>
                     <Button
-                      className="btn btn-block w-100 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-yellow-300 to-yellow-500 hover:from-yellow-500 hover:to-yellow-300"
+                      className="btn-block"
                       type="button"
                       disabled={product.countInStock === 0}
+                      onClick={addToCartHandler}
                     >
-                      Add to Cart
+                      Add To Cart
                     </Button>
                   </ListGroup.Item>
                 </ListGroup>
               </Card>
-            </Col>
-          </Row>
-
-          {/* Centered Go Back Button */}
-          <Row className="my-4">
-            <Col className="d-flex justify-content-center">
-              <Link
-                to="/"
-                className="flex justify-center items-center w-24 h-12 rounded-lg text-white bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-yellow-300 to-yellow-500 hover:from-yellow-500 hover:to-yellow-300"
-              >
-                <FaHome className="mr-1" />
-                Go back
-              </Link>
             </Col>
           </Row>
         </>
