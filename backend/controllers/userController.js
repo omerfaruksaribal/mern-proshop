@@ -136,7 +136,8 @@ const updateUserProfile = asyncHandler(async (req, res) => {
  * @description Get all users (admin only)
  * @method GET
  * @link /api/users
- * @access private/admin
+ * @access private
+ * @role Admin
  */
 const getUsers = asyncHandler(async (req, res) => {
   const users = await User.find({});
@@ -147,7 +148,8 @@ const getUsers = asyncHandler(async (req, res) => {
  * @description Get user by ID
  * @method GET
  * @link /api/users/:id
- * @access private/admin
+ * @access private
+ * @role Admin
  */
 const getUserById = asyncHandler(async (req, res) => {
   const user = await User.findById(req.params.id);
@@ -163,7 +165,8 @@ const getUserById = asyncHandler(async (req, res) => {
  * @description Delete user
  * @method DELETE
  * @link /api/users/:id
- * @access private/admin
+ * @access private
+ * @role Admin
  */
 const deleteUser = asyncHandler(async (req, res) => {
   res.send('user deleted');
@@ -173,7 +176,8 @@ const deleteUser = asyncHandler(async (req, res) => {
  * @description Update user
  * @method PUT
  * @link /api/users/:id
- * @access private/admin
+ * @access private
+ * @role Admin
  */
 const updateUser = asyncHandler(async (req, res) => {
   res.send('update user');
