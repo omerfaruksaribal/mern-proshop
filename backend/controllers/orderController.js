@@ -1,11 +1,14 @@
 import asyncHandler from '../middleware/asyncHandler.js';
 import Order from '../models/orderModel.js';
+import Stripe from 'stripe';
+import dotenv from 'dotenv';
+dotenv.config();
+const stripe = new Stripe(`${process.env.REACT_APP_STRIPE_TEST_SECRET}`);
 
 /**
- * @description Create a new Order
- * @method POST
- * @link /api/orders
- * @access Private
+ * @desc    Create new order
+ * @route   POST /api/orders
+ * @access  Private
  */
 const addOrderItems = asyncHandler(async (req, res) => {
   const {
@@ -13,101 +16,198 @@ const addOrderItems = asyncHandler(async (req, res) => {
     shippingAddress,
     paymentMethod,
     itemsPrice,
-    shippingPrice,
     taxPrice,
+    shippingPrice,
     totalPrice,
   } = req.body;
-  if (orderItems && orderItems.length === 0) {
-    res.status(400);
-    throw new Error('No Order Items');
-  } else {
-    const order = new Order({
-      orderItems: orderItems.map((x) => ({
-        ...x,
-        product: x._id,
-        _id: undefined,
-      })),
-      user: req.user._id,
-      shippingAddress,
-      paymentMethod,
-      itemsPrice,
-      shippingPrice,
-      taxPrice,
-      totalPrice,
-    });
-    const createdOrder = await order.save();
-    res.status(201).json(createdOrder);
+
+  if (!orderItems || orderItems.length === 0) {
+    res.status(400).json({ message: 'No order items' });
+    return;
   }
+
+  const order = new Order({
+    orderItems: orderItems.map((item) => ({
+      ...item,
+      product: item._id,
+      _id: undefined,
+    })),
+    user: req.user._id,
+    shippingAddress,
+    paymentMethod,
+    itemsPrice,
+    taxPrice,
+    shippingPrice,
+    totalPrice,
+  });
+
+  const createdOrder = await order.save();
+  res.status(200).json(createdOrder);
 });
 
 /**
- * @description Get Logged in Users Orders
- * @method Get
- * @link /api/orders/myorders
- * @access Private
+ * @desc    Get logged in user orders
+ * @route   GET /api/orders/myorders
+ * @access  Private
  */
 const getMyOrders = asyncHandler(async (req, res) => {
   const orders = await Order.find({ user: req.user._id });
-  res.json(orders);
+  res.status(200).json(orders);
 });
 
 /**
- * @description Update Order to Paid
- * @method POST
- * @link /api/orders/:id/pay
- * @access Private
- */
-const updateOrderToPaid = asyncHandler(async (req, res) => {
-  res.send('update order to paid');
-});
-
-/**
- * @description Get Order by ID
- * @method POST
- * @link /api/orders/:id
- * @access Private
- * @role Admin
+ * @desc    Get order by ID
+ * @route   GET /api/orders/:id
+ * @access  Private
  */
 const getOrderById = asyncHandler(async (req, res) => {
-  const order = await Order.findById({ _id: req.params.id }).populate(
+  const order = await Order.findById(req.params.id).populate(
     'user',
     'name email'
   );
+
   if (order) {
-    res.json(order);
+    res.status(200).json(order);
   } else {
-    res.status(404);
-    throw new Error('Order not found');
+    res.status(404).json({ message: 'Order not found' });
   }
 });
 
 /**
- * @description Update Order to Delivered
- * @method POST
- * @link /api/orders/:id/deliver
- * @access Private
- * @role Admin
+ * @desc    Update order to delivered
+ * @route   PUT /api/orders/:id/deliver
+ * @access  Private/Admin
  */
 const updateOrderToDelivered = asyncHandler(async (req, res) => {
-  res.send('update order to delivered');
+  const order = await Order.findById(req.params.id);
+
+  if (order) {
+    order.isDelivered = true;
+    order.deliveredAt = Date.now();
+    const updatedOrder = await order.save();
+    res.status(200).json(updatedOrder);
+  } else {
+    res.status(404).json({ message: 'Order not found' });
+  }
 });
 
 /**
- * @description Get All Orders
- * @method Get
- * @link /api/orders
- * @access Private
- * @role Admin
- *  */
-const getOrders = asyncHandler(async (req, res) => {
-  res.send('get all orders');
+ * @desc    Get all orders
+ * @route   GET /api/orders
+ * @access  Private/Admin
+ */
+const getAllOrders = asyncHandler(async (req, res) => {
+  const orders = await Order.find({}).populate('user', 'id name');
+  res.status(200).json(orders);
+});
+
+/**
+ * @desc    Delete order
+ * @route   DELETE /api/orders/:id
+ * @access  Private/Admin
+ */
+const deleteOrder = asyncHandler(async (req, res) => {
+  const order = await Order.findById(req.params.id);
+
+  if (order) {
+    await order.remove();
+    res.status(200).json({ message: 'Order removed' });
+  } else {
+    res.status(404).json({ message: 'Order not found' });
+  }
+});
+
+/**
+ * @desc    Create a checkout session with Stripe
+ * @route   POST /api/orders/create-checkout-session
+ * @access  Private
+ */
+const createCheckoutSession = asyncHandler(async (req, res) => {
+  try {
+    const { cartItems, shippingAddress } = req.body;
+
+    if (!cartItems || cartItems.length === 0) {
+      res.status(400).json({ message: 'Cart items are required' });
+      return;
+    }
+
+    const lineItems = cartItems.map((item) => ({
+      price_data: {
+        currency: 'usd',
+        product_data: {
+          name: item.name,
+        },
+        unit_amount: Math.round(item.price * 100),
+      },
+      quantity: item.qty,
+    }));
+
+    const returnUrl =
+      process.env.NODE_ENV === 'production'
+        ? `https://mernmart.onrender.com/return?session_id={CHECKOUT_SESSION_ID}`
+        : `http://localhost:3000/return?session_id={CHECKOUT_SESSION_ID}`;
+
+    const session = await stripe.checkout.sessions.create({
+      ui_mode: 'embedded',
+      payment_method_types: ['card'],
+      line_items: lineItems,
+      mode: 'payment',
+      return_url: returnUrl,
+      metadata: {
+        userId: req.user._id.toString(),
+        productIds: cartItems.map((item) => item._id).join(','),
+        shippingAddress: JSON.stringify({
+          address: shippingAddress?.address || 'No address provided',
+          city: shippingAddress?.city || 'No city',
+          postalCode: shippingAddress?.postalCode || '00000',
+          country: shippingAddress?.country || 'No country',
+        }),
+      },
+    });
+    res.send({ clientSecret: session.client_secret, sessionId: session.id });
+  } catch (error) {
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
+/**
+ * @desc    Get Stripe checkout session status
+ * @route   GET /api/orders/session-status
+ * @access  Private
+ */
+const getStripeSessionStatus = asyncHandler(async (req, res) => {
+  const session = await stripe.checkout.sessions.retrieve(req.query.session_id);
+
+  res.send({
+    status: session.status,
+    customer_email: session.customer_details.email,
+  });
+});
+
+/**
+ * @desc    Get order by session ID
+ * @route   GET /api/orders/order-by-session-id
+ * @access  Private
+ */
+const getOrderBySessionId = asyncHandler(async (req, res) => {
+  const sessionId = req.query.session_id;
+  const order = await Order.findOne({ 'paymentResult.id': sessionId });
+
+  if (order) {
+    res.status(200).json(order);
+  } else {
+    res.status(404).json({ message: 'Order not found' });
+  }
 });
 
 export {
   addOrderItems,
   getMyOrders,
   getOrderById,
-  updateOrderToPaid,
   updateOrderToDelivered,
-  getOrders,
+  getAllOrders,
+  deleteOrder,
+  createCheckoutSession,
+  getStripeSessionStatus,
+  getOrderBySessionId,
 };

@@ -1,17 +1,19 @@
 import { useState, useEffect } from 'react';
-import { Form, Button, Row, Col } from 'react-bootstrap';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Form, Button, Row, Col, FloatingLabel } from 'react-bootstrap';
 import { useDispatch, useSelector } from 'react-redux';
-import { toast } from 'react-toastify';
-
-import FormContainer from '../components/FormContainer';
+import FormContainer from '../components/FormContainer.jsx';
+import Loader from '../components/Loader.jsx';
 import { useLoginMutation } from '../slices/usersApiSlice.js';
-import { setCredentials } from '../slices/authSlice';
-import Loader from '../components/Loader';
+import { setCredentials } from '../slices/authSlice.js';
+import { toast } from 'react-toastify';
+import Message from '../components/Message.jsx';
 
 const LoginScreen = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+
+  const [errorMessage, setErrorMessage] = useState('');
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -28,47 +30,63 @@ const LoginScreen = () => {
     if (userInfo) {
       navigate(redirect);
     }
-  }, [navigate, userInfo, redirect]);
+  }, [userInfo, redirect, navigate]);
 
   const submitHandler = async (e) => {
     e.preventDefault();
+
     try {
       const res = await login({ email, password }).unwrap();
       dispatch(setCredentials({ ...res }));
       navigate(redirect);
-      toast.success('Successfully logged in');
-    } catch (err) {
-      toast.error(err?.data?.message || err.error);
+      toast.success('Welcome!', {
+        theme: 'colored',
+        position: 'top-center',
+      });
+    } catch (error) {
+      // toast.error(error?.data?.message || error.error, {
+      //   theme: 'colored',
+      //   position: 'top-center',
+      // });
+      setErrorMessage(error?.data?.message || error.error);
     }
   };
+
   return (
     <FormContainer>
-      <h1>Sign In</h1>
+      <h1 className="mb-4">Sign In</h1>
+
       <Form onSubmit={submitHandler}>
-        <Form.Group controlId="email" className="my-3">
-          <Form.Label>Email Address</Form.Label>
+        <FloatingLabel
+          controlId="floatingInput"
+          label="Email address"
+          className="mb-3"
+        >
           <Form.Control
             type="email"
-            placeholder="Enter email"
+            placeholder="name@example.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-          ></Form.Control>
-        </Form.Group>
-
-        <Form.Group controlId="password">
-          <Form.Label>Password</Form.Label>
+            className="mb-3"
+          />
+        </FloatingLabel>
+        <FloatingLabel controlId="floatingPassword" label="Password">
           <Form.Control
             type="password"
-            placeholder="Enter password"
+            placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-          ></Form.Control>
-        </Form.Group>
+            className="mb-3"
+            style={{ letterSpacing: 2 }}
+          />
+        </FloatingLabel>
+
+        {errorMessage && <Message variant="danger">{errorMessage}</Message>}
 
         <Button
           type="submit"
-          variant="primary"
-          className="mt-2"
+          className="px-3 py-2 mt-2 bg-primary fw-bold"
+          style={{ fontSize: 18 }}
           disabled={isLoading}
         >
           Sign In
@@ -76,12 +94,25 @@ const LoginScreen = () => {
 
         {isLoading && <Loader />}
       </Form>
+
       <Row className="py-3">
         <Col>
-          New Customer?{' '}
-          <Link to={redirect ? `/register?redirect=${redirect}` : '/register'}>
-            Register
-          </Link>
+          Are you new customer? {'  '}
+          <span>
+            <b>
+              <Link
+                to={redirect ? `/register?redirect=${redirect}` : '/register'}
+              >
+                Sign Up
+              </Link>
+            </b>
+          </span>
+        </Col>
+      </Row>
+
+      <Row className="py-3">
+        <Col>
+          <Link to="/forgot-password">Forgot Password</Link>
         </Col>
       </Row>
     </FormContainer>

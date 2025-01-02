@@ -1,13 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Form, Button, Row, Col } from 'react-bootstrap';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux';
+import { Link, useNavigate } from 'react-router-dom';
+import { Form, Button, Row, Col, FloatingLabel } from 'react-bootstrap';
+import { useSelector } from 'react-redux';
+import FormContainer from '../components/FormContainer';
+import Loader from '../components/Loader';
+import { useRegisterMutation } from '../slices/usersApiSlice';
 import { toast } from 'react-toastify';
-
-import FormContainer from '../components/FormContainer.jsx';
-import { useRegisterMutation } from '../slices/usersApiSlice.js';
-import { setCredentials } from '../slices/authSlice.js';
-import Loader from '../components/Loader.jsx';
 
 const RegisterScreen = () => {
   const [name, setName] = useState('');
@@ -15,99 +13,135 @@ const RegisterScreen = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
-  const dispatch = useDispatch();
   const navigate = useNavigate();
 
   const [register, { isLoading }] = useRegisterMutation();
 
   const { userInfo } = useSelector((state) => state.auth);
 
-  const { search } = useLocation();
-  const sp = new URLSearchParams(search);
-  const redirect = sp.get('redirect') || '/';
-
   useEffect(() => {
     if (userInfo) {
-      navigate(redirect);
+      navigate('/');
     }
-  }, [navigate, userInfo, redirect]);
+  }, [userInfo, navigate]);
 
   const submitHandler = async (e) => {
     e.preventDefault();
-    if (password !== confirmPassword) {
-      toast.error('Passwords do not match');
+
+    if (password.length < 6) {
+      toast.warning('Password must be at least 6 characters.', {
+        theme: 'colored',
+        position: 'top-center',
+      });
       return;
+    }
+
+    if (password !== confirmPassword) {
+      toast.warn('Passwords do not match.', {
+        theme: 'colored',
+        position: 'top-center',
+      });
     } else {
       try {
-        const res = await register({ name, email, password }).unwrap();
-        dispatch(setCredentials({ ...res }));
-        navigate(redirect);
-        toast.success('Successfully registered');
-      } catch (err) {
-        toast.error(err?.data?.message || err.error);
+        const response = await register({ name, email, password }).unwrap();
+        navigate('/verify', {
+          state: {
+            name,
+            email,
+            password,
+            activationToken: response.activationToken,
+          },
+        });
+        toast.success(`Verification code sent to ${email}.`, {
+          theme: 'colored',
+          position: 'top-center',
+        });
+      } catch (error) {
+        toast.error(
+          `Something went wrong. [${error?.data?.message || error.error}]`,
+          {
+            theme: 'colored',
+            position: 'top-center',
+          }
+        );
       }
     }
   };
+
   return (
     <FormContainer>
       <h1>Sign Up</h1>
       <Form onSubmit={submitHandler}>
-        <Form.Group controlId="name" className="my-3">
-          <Form.Label>Name</Form.Label>
+        <FloatingLabel
+          controlId="floatingInput"
+          label="Full Name"
+          className="mb-3 text-black"
+        >
           <Form.Control
             type="text"
-            placeholder="Enter name"
+            placeholder="your name"
             value={name}
             onChange={(e) => setName(e.target.value)}
-          ></Form.Control>
-        </Form.Group>
-        <Form.Group controlId="email" className="my-3">
-          <Form.Label>Email Address</Form.Label>
+            className="mb-3"
+          />
+        </FloatingLabel>
+        <FloatingLabel
+          controlId="floatingInput"
+          label="Email Address"
+          className="mb-3"
+        >
           <Form.Control
             type="email"
-            placeholder="Enter email"
+            placeholder="name@example.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-          ></Form.Control>
-        </Form.Group>
-
-        <Form.Group controlId="password">
-          <Form.Label>Password</Form.Label>
+            className="mb-3"
+          />
+        </FloatingLabel>
+        <FloatingLabel controlId="floatingPassword" label="Password">
           <Form.Control
             type="password"
-            placeholder="Enter password"
+            placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-          ></Form.Control>
-        </Form.Group>
-
-        <Form.Group controlId="confirmPassword" className="my-3">
-          <Form.Label>Confirm Password</Form.Label>
+            className="mb-3"
+            style={{ letterSpacing: 2 }}
+          />
+        </FloatingLabel>
+        <FloatingLabel
+          controlId="floatingInput"
+          label="Confirm Password"
+          className="mb-3"
+        >
           <Form.Control
             type="password"
-            placeholder="Confirm password"
+            placeholder="Confirm Password"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
-          ></Form.Control>
-        </Form.Group>
+            className="mb-3"
+            style={{ letterSpacing: 2 }}
+          />
+        </FloatingLabel>
 
         <Button
           type="submit"
-          variant="primary"
-          className="mt-2 "
+          className="px-3 py-2 mt-2 bg-primary fw-bold"
           disabled={isLoading}
         >
-          Register
+          Sign Up
         </Button>
 
         {isLoading && <Loader />}
       </Form>
+
       <Row className="py-3">
         <Col>
-          Already Have an Account?{' '}
-          <Link to={redirect ? `/login?redirect=${redirect}` : '/login'}>
-            Login
-          </Link>
+          Already have an account? {'  '}
+          <span>
+            <b>
+              <Link to="/login">Sign In</Link>
+            </b>
+          </span>
         </Col>
       </Row>
     </FormContainer>

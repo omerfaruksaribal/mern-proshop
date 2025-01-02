@@ -1,22 +1,34 @@
 import express from 'express';
 const router = express.Router();
-import { protect, admin } from '../middleware/authMiddleware.js';
 import {
   addOrderItems,
-  getOrderById,
-  updateOrderToPaid,
   getMyOrders,
-  getOrders,
+  getOrderById,
   updateOrderToDelivered,
+  getAllOrders,
+  deleteOrder,
+  createCheckoutSession,
+  getStripeSessionStatus,
+  getOrderBySessionId,
 } from '../controllers/orderController.js';
+import { protect, admin } from '../middleware/authMiddleware.js';
 
-router.route('/').post(protect, addOrderItems);
-router.route('/myorders').get(protect, getMyOrders);
-router.route('/:id/pay').put(protect, updateOrderToPaid);
+router.post('/create-checkout-session', protect, createCheckoutSession);
+router.get('/session-status', getStripeSessionStatus);
+router.get('/order-by-session-id', protect, getOrderBySessionId);
 
-// Admin Only Routes
-router.route('/').get(protect, admin, getOrders);
-router.route('/:id').get(protect, admin, getOrderById);
+router
+  .route('/')
+  .post(protect, addOrderItems)
+  .get(protect, admin, getAllOrders);
+
+router.route('/mine').get(protect, getMyOrders);
+
+router
+  .route('/:id')
+  .get(protect, getOrderById)
+  .put(protect, admin, deleteOrder);
+
 router.route('/:id/deliver').put(protect, admin, updateOrderToDelivered);
 
 export default router;
