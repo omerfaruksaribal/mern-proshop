@@ -6,7 +6,7 @@ import {
   AiFillYoutube,
   AiOutlineTwitter,
 } from 'react-icons/ai';
-import logoOutline from '../assets/logo.png';
+import logoOutline from '../assets/logo-outline.png';
 import { toast } from 'react-toastify';
 
 const footerCompanyLinks = [

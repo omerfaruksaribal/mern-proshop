@@ -2,6 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
+* {
+  font-family: 'Poppins', sans-serif;
+}
+
+*::selection {
+  background-color: #0a1f5c;
+  color: #fff;
+}
+
 main {
   min-height: 80vh;
 }
@@ -15,16 +24,26 @@ main {
 }
 
 .rating-text {
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   font-weight: 600;
   padding-left: 0.5rem;
+  padding-top: 0.5rem;
+}
+
+.product-card img {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
 }
 
 .product-title {
-  height: 2.5em; /* Set a fixed height */
-  overflow: hidden; /* Hide overflow content */
-  text-overflow: ellipsis; /* Add ellipsis for long text */
-  white-space: nowrap; /* Prevent wrapping */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: normal;
 }
 
 table td,
@@ -49,9 +68,258 @@ table th {
 
 .carousel-caption {
   position: absolute;
-  width: 100%;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(255, 0, 93, 0.6);
+}
+
+.caption {
+  font-size: 2.2rem;
+  font-weight: 500;
+}
+
+.carousel-container {
+  border-radius: 20px;
+  box-shadow: rgba(0, 0, 0, 0.308) 0px 2px 20px -2px;
+  padding-top: 3rem;
+  padding-bottom: 1px;
+}
+
+/* for the search box in header */
+.search-input::placeholder {
+  color: #ffb51a !important;
+}
+
+/* product card - custom styles */
+.product-card {
+  transition: all 5s ease-in-out;
+}
+
+.product-card:hover {
+  box-shadow: rgba(85, 138, 251, 0.17) 0px -12px 14px 0px inset,
+    rgba(177, 202, 255, 0.17) 0px -16px 30px 0px inset,
+    rgba(137, 137, 137, 0.1) 0px -20px 40px 0px inset,
+    rgba(0, 0, 0, 0.06) 0px 2px 1px, rgba(0, 0, 0, 0.09) 0px 4px 2px,
+    rgba(0, 0, 0, 0.09) 0px 8px 4px, rgba(185, 185, 185, 0.09) 0px 16px 8px,
+    rgba(0, 0, 0, 0.09) 0px 24px 16px;
+  transition: all 5s ease-in-out;
+}
+
+.card-price-button-container {
+  position: relative;
+  padding: 24px 20px;
+  margin-top: 20px;
+}
+
+.product-price,
+.add-to-cart-button {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.3s ease-in-out;
+}
+
+.product-price {
+  opacity: 1;
+  transition: opacity 0.3s ease-in-out;
+}
+
+.add-to-cart-button {
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+}
+
+.card:hover .product-price {
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+}
+
+.card:hover .add-to-cart-button {
+  opacity: 1;
+  transition: opacity 0.3s ease-in-out;
+}
+
+.social-icon {
+  margin: 5px;
+  padding: 12px;
+  transition: 0.25s;
+  border-radius: 50%;
+}
+
+.social-icon:hover {
+  color: #fff;
+  background-color: #45beff;
+  transition: 0.25s;
+}
+
+.slider {
+  overflow: hidden;
+  position: relative;
+  white-space: nowrap;
+  box-sizing: border-box;
+  height: 5px;
+  background: linear-gradient(
+    to right,
+    rgb(255, 75, 141),
+    rgb(1, 179, 255),
+    rgb(255, 210, 28),
+    rgb(9, 182, 9)
+  );
+}
+
+.slider {
+  /* option 2 */
+  height: 10px;
+  background: linear-gradient(
+    to right,
+    rgb(255, 75, 141),
+    rgb(1, 179, 255),
+    rgb(255, 210, 28),
+    rgb(9, 182, 9)
+  );
+}
+
+.slider-text {
+  display: inline-block;
+  padding-left: 100%;
+  /* animation: slide 12s linear infinite; */
+}
+
+.slider:hover .slider-text {
+  animation-play-state: paused;
+}
+
+@media screen and (max-width: 768px) {
+  .searchbox {
+    margin-bottom: 24px;
+  }
+}
+
+@keyframes slide {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-65%);
+  }
+}
+
+/* Styles for mobile screens */
+@media (max-width: 768px) {
+  .card-price-button-container {
+    margin: 0;
+  }
+
+  .product-price,
+  .add-to-cart-button {
+    position: static;
+    opacity: 1;
+    transition: none;
+    font-size: 2rem;
+  }
+
+  .card:hover .product-price,
+  .card:hover .add-to-cart-button {
+    opacity: 1;
+  }
+
+  .add-to-cart-button {
+    height: 52px;
+    width: 70vw;
+  }
+
+  .product-title {
+    font-size: 1.25rem;
+  }
+
+  .rating-text {
+    font-size: 1rem;
+  }
+}
+
+/* OTP Input Styles */
+/* OTP Input Styles */
+.height-100 {
+  height: 100vh;
+}
+
+.card {
+  border: none;
+  box-shadow: 0px 5px 20px 0px #d2dae3;
+  z-index: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 32px 64px;
+  margin: 8px;
+}
+
+.card h6 {
+  font-size: 20px;
+}
+
+.inputs input {
+  width: 50px;
+  height: 50px;
+  border: none;
+  box-shadow: 0px 4px 8px 0px #b6c2d0;
+  font-size: 24px;
+  text-align: center;
+}
+
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  margin: 0;
+}
+
+.card-2 {
+  background-color: #fff;
+  padding: 16px;
+  width: 350px;
+  height: 100px;
+  bottom: -50px;
+  left: 20px;
+  position: absolute;
+  border-radius: 5px;
+}
+
+.card-2 .content {
+  margin-top: 50px;
+}
+
+.form-control:focus {
+  box-shadow: none;
+  border: 3px solid #3c4c5d;
+}
+
+.timer {
+  font-size: 20px;
+  color: #fff;
+  background-color: #ff004ccb;
+  border-radius: 4px;
+  padding: 5px 12px;
+  display: inline-block;
+  margin: 10px 0;
+  text-align: center;
+}
+
+/* Responsive for smaller screens */
+@media only screen and (max-width: 500px) {
+  .card {
+    width: 350px; /* Adjust card width for small screens */
+  }
+
+  .inputs input {
+    width: 40px; /* Adjust input width for small screens */
+    height: 40px; /* Adjust input height for small screens */
+  }
 }

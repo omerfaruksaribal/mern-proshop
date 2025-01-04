@@ -5,9 +5,10 @@ import { LinkContainer } from 'react-router-bootstrap';
 import { useSelector, useDispatch } from 'react-redux';
 import { useLogoutMutation } from '../slices/usersApiSlice';
 import { logout } from '../slices/authSlice';
-import logoOutline from '../assets/logo.png';
+import logoOutline from '../assets/logo-outline.png';
 import SearchBox from './SearchBox';
 import { toast } from 'react-toastify';
+import { resetCart } from '../slices/cartSlice';
 
 /**
  * Header component that displays the navigation bar, search box, cart information,
@@ -32,6 +33,7 @@ const Header = () => {
     try {
       await logoutApiCall().unwrap();
       dispatch(logout());
+      dispatch(resetCart());
       navigate('/login');
     } catch (error) {
       toast.error(error?.data?.message || error.error, {

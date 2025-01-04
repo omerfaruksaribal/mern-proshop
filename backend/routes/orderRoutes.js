@@ -10,6 +10,7 @@ import {
   createCheckoutSession,
   getStripeSessionStatus,
   getOrderBySessionId,
+  updateOrderToPaid,
 } from '../controllers/orderController.js';
 import { protect, admin } from '../middleware/authMiddleware.js';
 
@@ -30,5 +31,6 @@ router
   .put(protect, admin, deleteOrder);
 
 router.route('/:id/deliver').put(protect, admin, updateOrderToDelivered);
+router.route('/:id/pay').put(protect, updateOrderToPaid);
 
 export default router;

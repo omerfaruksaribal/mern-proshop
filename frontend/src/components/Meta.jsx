@@ -27,7 +27,7 @@ Meta.defaultProps = {
   description:
     'Shop at ProShop for top-quality electronics, gadgets, home appliances, mobile devices, laptops, and more at unbeatable prices. Fast shipping and excellent customer service guaranteed.',
   keywords:
-    'electronics, gadgets, home appliances, mobile devices, laptops, tablets, phones, gaming consoles, audio devices, cheap electronics, top electronics, affordable gadgets, best prices, Mernmart, buy electronics online, fast shipping, best online electronics store, quality products, latest electronics, technology, computer accessories, wearable tech, home gadgets, smart home devices, discounted electronics, trending gadgets, electronics deals, online electronics shopping',
+    'electronics, gadgets, home appliances, mobile devices, laptops, tablets, phones, gaming consoles, audio devices, cheap electronics, top electronics, affordable gadgets, best prices, ProShop, buy electronics online, fast shipping, best online electronics store, quality products, latest electronics, technology, computer accessories, wearable tech, home gadgets, smart home devices, discounted electronics, trending gadgets, electronics deals, online electronics shopping',
 };
 
 export default Meta;

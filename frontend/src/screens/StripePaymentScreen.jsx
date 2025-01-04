@@ -81,51 +81,76 @@ export const Return = () => {
   const [status, setStatus] = useState(null);
   // eslint-disable-next-line no-unused-vars
   const [customerEmail, setCustomerEmail] = useState('');
-
   /**
    * Get order details from the database after checkout is completed
    */
 
+  const [orderId, setOrderId] = useState(null);
   // eslint-disable-next-line no-unused-vars
-  const { data, refetch, isLoading, error } = useGetOrderDetailsQuery();
+  const { data, refetch, isLoading, error } = useGetOrderDetailsQuery(orderId, {
+    skip: !orderId,
+  });
 
-  const placeOrderHandler = useCallback(async () => {
-    try {
-      await createOrder({
-        orderItems: cartItems,
-        shippingAddress: shippingAddress || 'default shipping address',
-        paymentMethod: 'Credit & Debit Card',
-        itemsPrice,
-        shippingPrice,
-        taxPrice,
-        totalPrice,
-      }).unwrap();
+  const placeOrderHandler = useCallback(
+    async (sessionId) => {
+      try {
+        const newOrder = await createOrder({
+          orderItems: cartItems,
+          shippingAddress,
+          paymentMethod: 'Credit & Debit Card',
+          itemsPrice,
+          shippingPrice,
+          taxPrice,
+          totalPrice,
+          isPaid: true,
+          paidAt: Date.now(),
+          paymentResult: {
+            id: sessionId,
+            status: 'COMPLETED',
+            email_address: customerEmail,
+          },
+        }).unwrap();
 
-      dispatch(clearCartItems());
-    } catch (error) {
-      toast.error(error?.data?.message || error.error, {
-        theme: 'colored',
-        position: 'top-center',
-      });
+        setOrderId(newOrder._id);
+        dispatch(clearCartItems());
+      } catch (err) {
+        console.error('Order creation failed:', err);
+        toast.error(
+          err?.data?.message || err.error || 'Order creation failed.',
+          {
+            theme: 'colored',
+            position: 'top-center',
+          }
+        );
+      }
+    },
+    [
+      createOrder,
+      cartItems,
+      shippingAddress,
+      itemsPrice,
+      shippingPrice,
+      taxPrice,
+      totalPrice,
+      customerEmail,
+      dispatch,
+    ]
+  );
+
+  useEffect(() => {
+    // call refetch only if orderId is set
+    if (orderId) {
+      refetch();
     }
-  }, [
-    createOrder,
-    cartItems,
-    shippingAddress,
-    itemsPrice,
-    shippingPrice,
-    taxPrice,
-    totalPrice,
-    dispatch,
-  ]);
+  }, [orderId, refetch]);
 
-  // Fetch order details if orderId is available
   useEffect(() => {
     const fetchSessionStatus = async () => {
       try {
-        const queryString = window.location.search;
-        const urlParams = new URLSearchParams(queryString);
-        const sessionId = urlParams.get('session_id');
+        const sessionId = new URLSearchParams(window.location.search).get(
+          'session_id'
+        );
+        if (!sessionId) return;
 
         const response = await fetch(
           `/api/orders/session-status?session_id=${sessionId}`
@@ -136,14 +161,15 @@ export const Return = () => {
           setStatus(data.status);
           setCustomerEmail(data.customer_email);
 
+          // Add this section to update order payment status
           if (data.status === 'complete') {
-            await placeOrderHandler(); // Ensure this updates the state
-            refetch(); // Fetch updated order details
+            await placeOrderHandler(sessionId);
           }
         } else {
-          throw new Error(`Failed to fetch session status: ${data.message}`);
+          throw new Error(data.message || 'Failed to fetch session status.');
         }
       } catch (error) {
+        console.log('Session status fetch failed:', error);
         toast.error(error.message || 'An error occurred.', {
           theme: 'colored',
           position: 'top-center',
@@ -152,12 +178,16 @@ export const Return = () => {
     };
 
     fetchSessionStatus();
-  }, [placeOrderHandler, refetch]);
+  }, [placeOrderHandler]);
+
+  const onClickFunction = () => {
+    placeOrderHandler();
+    dispatch(clearCartItems());
+  };
 
   if (status === 'open') {
     return <Navigate to="/checkout" />;
   }
-
   if (status === 'complete') {
     return (
       <section id="success" className="container mt-2 mb-5">
@@ -223,6 +253,9 @@ export const Return = () => {
                   <a
                     href="/"
                     className="px-4 text-white btn bg-primary fw-semibold"
+                    onClick={() => {
+                      onClickFunction();
+                    }}
                   >
                     Continue Shopping
                   </a>

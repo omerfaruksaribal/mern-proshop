@@ -28,7 +28,7 @@ const HomeScreen = () => {
         </Message>
       ) : (
         <>
-          <Meta title="Mernmart | Your eCommerce Website" />
+          <Meta title="ProShop | Your eCommerce Website" />
           {keyword ? (
             <>
               <Link to="/" className="btn btn-light">

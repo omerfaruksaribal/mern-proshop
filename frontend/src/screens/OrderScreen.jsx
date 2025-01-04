@@ -9,7 +9,6 @@ import {
   useDeliverOrderMutation,
 } from '../slices/ordersApiSlice.js';
 import { formatDate } from '../utils/formatDate.js';
-
 const OrderScreen = () => {
   const { id: orderId } = useParams();
 
@@ -22,6 +21,7 @@ const OrderScreen = () => {
 
   const [deliverOrder, { isLoading: loadingDeliver }] =
     useDeliverOrderMutation();
+
   const { userInfo } = useSelector((state) => state.auth);
 
   const deliverOrderHandler = async () => {
@@ -43,14 +43,12 @@ const OrderScreen = () => {
   return isLoading ? (
     <Loader />
   ) : error ? (
-    <Message variant="danger">{error}</Message>
+    <Message variant="danger">{error?.data?.message || error.error}</Message>
   ) : (
     <>
       <h1 className="p-4 m-2 text-center bg-info-subtle rounded-2">
         Order ({order._id})
       </h1>
-
-      <div id="iyzipay-checkout-form" className="popup"></div>
 
       <Row>
         <Col md={8}>
@@ -84,10 +82,13 @@ const OrderScreen = () => {
               <p>
                 <strong>Method: </strong> {order.paymentMethod}
               </p>
-
-              <Message variant="info">
-                Order placed on {formatDate(order.createdAt)}
-              </Message>
+              {order.isPaid ? (
+                <Message variant="success">
+                  Paid on {formatDate(order.paidAt)}
+                </Message>
+              ) : (
+                <Message variant="danger">Not Paid Yet</Message>
+              )}
             </ListGroup.Item>
 
             <ListGroup.Item>
@@ -142,8 +143,6 @@ const OrderScreen = () => {
                 </Col>
               </Row>
             </ListGroup.Item>
-
-            {userInfo && !userInfo.isAdmin && <ListGroup.Item></ListGroup.Item>}
 
             {loadingDeliver && <Loader />}
 

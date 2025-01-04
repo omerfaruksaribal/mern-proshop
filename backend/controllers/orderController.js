@@ -1,7 +1,10 @@
-import asyncHandler from '../middleware/asyncHandler.js';
-import Order from '../models/orderModel.js';
 import Stripe from 'stripe';
 import dotenv from 'dotenv';
+import asyncHandler from '../middleware/asyncHandler.js';
+import Order from '../models/orderModel.js';
+import { calcPrices } from '../utils/calcPrices.js';
+import Product from '../models/productModel.js';
+
 dotenv.config();
 const stripe = new Stripe(`${process.env.REACT_APP_STRIPE_TEST_SECRET}`);
 
@@ -15,34 +18,55 @@ const addOrderItems = asyncHandler(async (req, res) => {
     orderItems,
     shippingAddress,
     paymentMethod,
-    itemsPrice,
-    taxPrice,
-    shippingPrice,
-    totalPrice,
+    isPaid,
+    paidAt,
+    paymentResult,
   } = req.body;
 
-  if (!orderItems || orderItems.length === 0) {
-    res.status(400).json({ message: 'No order items' });
-    return;
+  if (orderItems && orderItems.length === 0) {
+    res.status(400);
+    throw new Error('No order items');
+  } else {
+    // get the ordered items from our database
+    const itemsFromDB = await Product.find({
+      _id: { $in: orderItems.map((x) => x._id) },
+    });
+
+    // map over the order items and use the price from our items from database
+    const dbOrderItems = orderItems.map((itemFromClient) => {
+      const matchingItemFromDB = itemsFromDB.find(
+        (itemFromDB) => itemFromDB._id.toString() === itemFromClient._id
+      );
+      return {
+        ...itemFromClient,
+        product: itemFromClient._id,
+        price: matchingItemFromDB.price,
+        _id: undefined,
+      };
+    });
+
+    // calculate prices
+    const { itemsPrice, taxPrice, shippingPrice, totalPrice } =
+      calcPrices(dbOrderItems);
+
+    const order = new Order({
+      orderItems: dbOrderItems,
+      user: req.user._id,
+      shippingAddress,
+      paymentMethod,
+      itemsPrice,
+      taxPrice,
+      shippingPrice,
+      totalPrice,
+      isPaid: isPaid || false,
+      paidAt: paidAt || null,
+      paymentResult: paymentResult || {},
+    });
+
+    const createdOrder = await order.save();
+
+    res.status(201).json(createdOrder);
   }
-
-  const order = new Order({
-    orderItems: orderItems.map((item) => ({
-      ...item,
-      product: item._id,
-      _id: undefined,
-    })),
-    user: req.user._id,
-    shippingAddress,
-    paymentMethod,
-    itemsPrice,
-    taxPrice,
-    shippingPrice,
-    totalPrice,
-  });
-
-  const createdOrder = await order.save();
-  res.status(200).json(createdOrder);
 });
 
 /**
@@ -200,6 +224,56 @@ const getOrderBySessionId = asyncHandler(async (req, res) => {
   }
 });
 
+/**
+ * @desc    Update order to paid
+ * @route   PUT /api/orders/:id/pay
+ * @access  Private
+ */
+const updateOrderToPaid = asyncHandler(async (req, res) => {
+  const { sessionId } = req.body;
+
+  // Confirm the session using Stripe's API
+  const session = await stripe.checkout.sessions.retrieve(sessionId);
+
+  if (!session) {
+    res.status(400);
+    throw new Error('Payment session not found');
+  }
+
+  if (session.payment_status !== 'paid') {
+    res.status(400);
+    throw new Error('Payment not completed');
+  }
+
+  const order = await Order.findById(req.params.id);
+
+  if (order) {
+    // Validate the correct amount was paid
+    const paidCorrectAmount =
+      order.totalPrice.toFixed(2) === (session.amount_total / 100).toFixed(2);
+    if (!paidCorrectAmount) {
+      res.status(400);
+      throw new Error('Incorrect amount paid');
+    }
+
+    // Mark order as paid
+    order.isPaid = true;
+    order.paidAt = Date.now();
+    order.paymentResult = {
+      id: session.id,
+      status: session.payment_status,
+      update_time: session.created,
+      email_address: session.customer_details.email,
+    };
+
+    const updatedOrder = await order.save();
+    res.status(200).json(updatedOrder);
+  } else {
+    res.status(404);
+    throw new Error('Order not found');
+  }
+});
+
 export {
   addOrderItems,
   getMyOrders,
@@ -210,4 +284,5 @@ export {
   createCheckoutSession,
   getStripeSessionStatus,
   getOrderBySessionId,
+  updateOrderToPaid,
 };
