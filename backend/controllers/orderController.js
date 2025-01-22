@@ -1,11 +1,13 @@
 import Stripe from 'stripe';
+
 import dotenv from 'dotenv';
+dotenv.config();
+
 import asyncHandler from '../middleware/asyncHandler.js';
 import Order from '../models/orderModel.js';
 import { calcPrices } from '../utils/calcPrices.js';
 import Product from '../models/productModel.js';
 
-dotenv.config();
 const stripe = new Stripe(`${process.env.REACT_APP_STRIPE_TEST_SECRET}`);
 
 /**
@@ -183,7 +185,7 @@ const createCheckoutSession = asyncHandler(async (req, res) => {
     }));
 
     const returnUrl =
-      process.env.NODE_ENV === 'production'
+      process.env.REACT_NODE_ENV === 'production'
         ? `https://mern-proshop-blush.vercel.app/return?session_id={CHECKOUT_SESSION_ID}`
         : `http://localhost:3000/return?session_id={CHECKOUT_SESSION_ID}`;
 
