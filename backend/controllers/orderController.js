@@ -184,7 +184,7 @@ const createCheckoutSession = asyncHandler(async (req, res) => {
 
     const returnUrl =
       process.env.NODE_ENV === 'production'
-        ? `https://mernmart.onrender.com/return?session_id={CHECKOUT_SESSION_ID}`
+        ? `https://mern-proshop-blush.vercel.app/return?session_id={CHECKOUT_SESSION_ID}`
         : `http://localhost:3000/return?session_id={CHECKOUT_SESSION_ID}`;
 
     const session = await stripe.checkout.sessions.create({

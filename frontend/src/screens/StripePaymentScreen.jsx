@@ -266,7 +266,10 @@ export const Return = () => {
             <div className="mt-3 card-footer">
               <p>
                 If you have any questions, please email{' '}
-                <a href="mailto:support@mernmart.com">support@mernmart.com</a>.
+                <a href="mailto:support@mern-proshop.com">
+                  support@mern-proshop.com
+                </a>
+                .
               </p>
             </div>
           </div>
