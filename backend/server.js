@@ -14,9 +14,6 @@ import orderRoutes from './routes/orderRoutes.js';
 import uploadRoutes from './routes/uploadRoutes.js';
 import { fileURLToPath } from 'url';
 
-// Confirm environment:
-console.log('Environment:', process.env.REACT_NODE_ENV);
-
 connectDB();
 
 const port = process.env.PORT || 8000;
