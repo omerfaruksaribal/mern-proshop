@@ -9,11 +9,25 @@ dotenv.config();
 const stripe = new Stripe(`${process.env.REACT_APP_STRIPE_TEST_SECRET}`);
 
 /**
- * @desc    Create new order
+ * @desc    Create new order with idempotency
  * @route   POST /api/orders
  * @access  Private
  */
 const addOrderItems = asyncHandler(async (req, res) => {
+  const { idempotencyKey, orderData } = req.body;
+
+  if (!idempotencyKey) {
+    res.status(400);
+    throw new Error('Idempotency key is required');
+  }
+
+  // Check if an order with this idempotencyKey already exists
+  const existingOrder = await Order.findOne({ idempotencyKey });
+  if (existingOrder) {
+    return res.status(200).json(existingOrder);
+  }
+
+  // Proceed to create a new order
   const {
     orderItems,
     shippingAddress,
@@ -21,34 +35,35 @@ const addOrderItems = asyncHandler(async (req, res) => {
     isPaid,
     paidAt,
     paymentResult,
-  } = req.body;
+  } = orderData;
 
   if (orderItems && orderItems.length === 0) {
     res.status(400);
     throw new Error('No order items');
   } else {
-    // get the ordered items from our database
+    // Get the ordered items from the database
     const itemsFromDB = await Product.find({
-      _id: { $in: orderItems.map((x) => x._id) },
+      _id: { $in: orderItems.map((x) => x.product) }, // Assuming 'product' is the ObjectId
     });
 
-    // map over the order items and use the price from our items from database
+    // Map over the order items and use the price from our items from the database
     const dbOrderItems = orderItems.map((itemFromClient) => {
       const matchingItemFromDB = itemsFromDB.find(
-        (itemFromDB) => itemFromDB._id.toString() === itemFromClient._id
+        (itemFromDB) =>
+          itemFromDB._id.toString() === itemFromClient.product.toString()
       );
       return {
         ...itemFromClient,
-        product: itemFromClient._id,
-        price: matchingItemFromDB.price,
-        _id: undefined,
+        price: matchingItemFromDB.price, // Ensure price consistency
+        _id: undefined, // Prevent duplication
       };
     });
 
-    // calculate prices
+    // Calculate prices
     const { itemsPrice, taxPrice, shippingPrice, totalPrice } =
       calcPrices(dbOrderItems);
 
+    // Create the order
     const order = new Order({
       orderItems: dbOrderItems,
       user: req.user._id,
@@ -61,6 +76,7 @@ const addOrderItems = asyncHandler(async (req, res) => {
       isPaid: isPaid || false,
       paidAt: paidAt || null,
       paymentResult: paymentResult || {},
+      idempotencyKey, // Store the idempotency key
     });
 
     const createdOrder = await order.save();
@@ -71,7 +87,7 @@ const addOrderItems = asyncHandler(async (req, res) => {
 
 /**
  * @desc    Get logged in user orders
- * @route   GET /api/orders/myorders
+ * @route   GET /api/orders/mine
  * @access  Private
  */
 const getMyOrders = asyncHandler(async (req, res) => {
@@ -172,14 +188,14 @@ const createCheckoutSession = asyncHandler(async (req, res) => {
         : `http://localhost:3000/return?session_id={CHECKOUT_SESSION_ID}`;
 
     const session = await stripe.checkout.sessions.create({
-      ui_mode: 'embedded',
+      mode: 'payment',
       payment_method_types: ['card'],
       line_items: lineItems,
-      mode: 'payment',
-      return_url: returnUrl,
+      success_url: returnUrl,
+      cancel_url: returnUrl,
       metadata: {
         userId: req.user._id.toString(),
-        productIds: cartItems.map((item) => item._id).join(','),
+        productIds: cartItems.map((item) => item.product).join(','),
         shippingAddress: JSON.stringify({
           address: shippingAddress?.address || 'No address provided',
           city: shippingAddress?.city || 'No city',
@@ -190,6 +206,7 @@ const createCheckoutSession = asyncHandler(async (req, res) => {
     });
     res.send({ clientSecret: session.client_secret, sessionId: session.id });
   } catch (error) {
+    console.error(error);
     res.status(500).json({ message: 'Internal Server Error' });
   }
 });

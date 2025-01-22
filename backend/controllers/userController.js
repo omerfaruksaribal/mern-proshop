@@ -1,8 +1,8 @@
-import jwt from 'jsonwebtoken';
+// import jwt from 'jsonwebtoken';
 import asyncHandler from '../middleware/asyncHandler.js';
 import User from '../models/userModel.js';
-import sendMail from '../utils/emailServices.js';
-import ejs from 'ejs';
+// import sendMail from '../utils/emailServices.js';
+// import ejs from 'ejs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import generateToken from '../utils/generateToken.js';
@@ -36,110 +36,136 @@ const authUser = asyncHandler(async (req, res) => {
   }
 });
 
+// /**
+//  * Generates a JWT token for account activation and a six-digit activation code.
+//  * @param {Object} user - The user object containing registration details.
+//  * @returns {{ token: string, activationCode: string }} - The JWT token and activation code.
+//  */
+// const createActivationToken = (user) => {
+//   const activationCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+//   const token = jwt.sign(
+//     {
+//       user,
+//       activationCode,
+//     },
+//     process.env.JWT_SECRET,
+//     {
+//       expiresIn: '5m',
+//     }
+//   );
+
+//   return { token, activationCode };
+// };
+
 /**
- * Generates a JWT token for account activation and a six-digit activation code.
- * @param {Object} user - The user object containing registration details.
- * @returns {{ token: string, activationCode: string }} - The JWT token and activation code.
- */
-const createActivationToken = (user) => {
-  const activationCode = Math.floor(100000 + Math.random() * 900000).toString();
-
-  const token = jwt.sign(
-    {
-      user,
-      activationCode,
-    },
-    process.env.JWT_SECRET,
-    {
-      expiresIn: '5m',
-    }
-  );
-
-  return { token, activationCode };
-};
-
-/**
- * @desc    Register new user and send activation email
+ * @desc    Register new user
  * @route   POST /api/users
  * @access  Public
  */
 const registerUser = asyncHandler(async (req, res) => {
   const { name, email, password } = req.body;
 
+  // Check if the email already exists
   const isEmailExist = await User.findOne({ email });
   if (isEmailExist) {
     res.status(400);
     throw new Error('E-mail already in use.');
   }
 
-  const user = { name, email, password };
-  const { token, activationCode } = createActivationToken(user);
+  // Save the user data
+  const user = new User({ name, email, password });
+  await user.save();
 
-  const data = { user: { name: user.name }, activationCode };
-
-  const htmlContent = await ejs.renderFile(
-    path.join(__dirname, '../mails', 'activation-mail.ejs'),
-    data
-  );
-
-  try {
-    await sendMail({
-      email: user.email,
-      subject: 'Activate your account',
-      template: 'activation-mail.ejs',
-      data,
-    });
-
-    res.status(201).json({
-      success: true,
-      message: `Please check your email: ${user.email} to activate your account!`,
-      activationToken: token,
-    });
-  } catch (error) {
-    res.status(400).json({
-      message: 'Email could not send. Please try again.',
-    });
-  }
+  // Respond with success (no email sent)
+  res.status(201).json({
+    success: true,
+    message: `User registered successfully!`,
+  });
 });
 
-/**
- * @desc    Verify user email after registration
- * @route   POST /api/users/verify-email
- * @access  Public
- */
-const verifyUser = asyncHandler(async (req, res) => {
-  try {
-    const { activation_token, activation_code } = req.body;
+// /**
+//  * @desc    Register new user and send activation email
+//  * @route   POST /api/users
+//  * @access  Public
+//  */
+// const registerUser = asyncHandler(async (req, res) => {
+//   const { name, email, password } = req.body;
 
-    const newUser = jwt.verify(activation_token, process.env.JWT_SECRET);
+//   const isEmailExist = await User.findOne({ email });
+//   if (isEmailExist) {
+//     res.status(400);
+//     throw new Error('E-mail already in use.');
+//   }
 
-    if (newUser.activationCode !== activation_code) {
-      throw new Error('Invalid activation code');
-    }
+//   const user = { name, email, password };
+//   const { token, activationCode } = createActivationToken(user);
 
-    const { name, email, password } = newUser.user;
+//   const data = { user: { name: user.name }, activationCode };
 
-    const existUser = await User.findOne({ email });
+//   const htmlContent = await ejs.renderFile(
+//     path.join(__dirname, '../mails', 'activation-mail.ejs'),
+//     data
+//   );
 
-    if (existUser) {
-      throw new Error('Email already exists');
-    }
+//   try {
+//     await sendMail({
+//       email: user.email,
+//       subject: 'Activate your account',
+//       template: 'activation-mail.ejs',
+//       data,
+//     });
 
-    const user = await User.create({
-      name,
-      email,
-      password,
-    });
+//     res.status(201).json({
+//       success: true,
+//       message: `Please check your email: ${user.email} to activate your account!`,
+//       activationToken: token,
+//     });
+//   } catch (error) {
+//     res.status(400).json({
+//       message: 'Email could not send. Please try again.',
+//     });
+//   }
+// });
 
-    res.status(201).json({
-      success: true,
-      message: 'User verified and registered successfully',
-      userId: user._id,
-    });
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
-});
+// /**
+//  * @desc    Verify user email after registration
+//  * @route   POST /api/users/verify-email
+//  * @access  Public
+//  */
+// const verifyUser = asyncHandler(async (req, res) => {
+//   try {
+//     const { activation_token, activation_code } = req.body;
+
+//     const newUser = jwt.verify(activation_token, process.env.JWT_SECRET);
+
+//     if (newUser.activationCode !== activation_code) {
+//       throw new Error('Invalid activation code');
+//     }
+
+//     const { name, email, password } = newUser.user;
+
+//     const existUser = await User.findOne({ email });
+
+//     if (existUser) {
+//       throw new Error('Email already exists');
+//     }
+
+//     const user = await User.create({
+//       name,
+//       email,
+//       password,
+//     });
+
+//     res.status(201).json({
+//       success: true,
+//       message: 'User verified and registered successfully',
+//       userId: user._id,
+//     });
+//   } catch (error) {
+//     res.status(400).json({ message: error.message });
+//   }
+// });
 
 /**
  * @desc    Logout user and clear cookie
@@ -281,85 +307,85 @@ const updateUser = asyncHandler(async (req, res) => {
   }
 });
 
-/**
- * @desc    Send forgot password email with reset code
- * @route   POST /api/users/forgot-password
- * @access  Public
- */
-const sendForgotPasswordEmail = asyncHandler(async (req, res) => {
-  const { email } = req.body;
-  const user = await User.findOne({ email });
+// /**
+//  * @desc    Send forgot password email with reset code
+//  * @route   POST /api/users/forgot-password
+//  * @access  Public
+//  */
+// const sendForgotPasswordEmail = asyncHandler(async (req, res) => {
+//   const { email } = req.body;
+//   const user = await User.findOne({ email });
 
-  if (user) {
-    const resetPasswordCode = Math.random().toString().slice(2, 8);
-    user.resetPasswordCode = resetPasswordCode;
-    user.resetPasswordCodeExpires = Date.now() + 10 * 60 * 1000;
-    await user.save();
+//   if (user) {
+//     const resetPasswordCode = Math.random().toString().slice(2, 8);
+//     user.resetPasswordCode = resetPasswordCode;
+//     user.resetPasswordCodeExpires = Date.now() + 10 * 60 * 1000;
+//     await user.save();
 
-    const data = { user: { name: user.name }, resetPasswordCode };
+//     const data = { user: { name: user.name }, resetPasswordCode };
 
-    const htmlContent = await ejs.renderFile(
-      path.join(__dirname, '../mails', 'reset-password-mail.ejs'),
-      data
-    );
+//     const htmlContent = await ejs.renderFile(
+//       path.join(__dirname, '../mails', 'reset-password-mail.ejs'),
+//       data
+//     );
 
-    try {
-      await sendMail({
-        email: user.email,
-        subject: 'Reset Your Password',
-        template: 'reset-password-mail.ejs',
-        data,
-      });
+//     try {
+//       await sendMail({
+//         email: user.email,
+//         subject: 'Reset Your Password',
+//         template: 'reset-password-mail.ejs',
+//         data,
+//       });
 
-      res.status(200).json({ message: 'Reset password code sent.' });
-    } catch (error) {
-      res.status(400).json({
-        message: 'Email could not be sent, please try again.',
-      });
-    }
-  } else {
-    res.status(404);
-    throw new Error('User not found');
-  }
-});
+//       res.status(200).json({ message: 'Reset password code sent.' });
+//     } catch (error) {
+//       res.status(400).json({
+//         message: 'Email could not be sent, please try again.',
+//       });
+//     }
+//   } else {
+//     res.status(404);
+//     throw new Error('User not found');
+//   }
+// });
 
-/**
- * @desc    Reset password
- * @route   POST /api/users/reset-password
- * @access  Private
- */
-const resetPassword = asyncHandler(async (req, res) => {
-  const { email, resetPasswordCode, newPassword } = req.body;
+// /**
+//  * @desc    Reset password
+//  * @route   POST /api/users/reset-password
+//  * @access  Private
+//  */
+// const resetPassword = asyncHandler(async (req, res) => {
+//   const { email, resetPasswordCode, newPassword } = req.body;
 
-  if (!email || !resetPasswordCode || !newPassword) {
-    res.status(400);
-    throw new Error('Fill in all required fields!');
-  }
+//   if (!email || !resetPasswordCode || !newPassword) {
+//     res.status(400);
+//     throw new Error('Fill in all required fields!');
+//   }
 
-  const user = await User.findOne({
-    email: email,
-    resetPasswordCode: resetPasswordCode,
-    resetPasswordCodeExpires: { $gt: Date.now() },
-  });
+//   const user = await User.findOne({
+//     email: email,
+//     resetPasswordCode: resetPasswordCode,
+//     resetPasswordCodeExpires: { $gt: Date.now() },
+//   });
 
-  if (!user) {
-    res.status(404);
-    throw new Error('User not found or expired code');
-  }
+//   if (!user) {
+//     res.status(404);
+//     throw new Error('User not found or expired code');
+//   }
 
-  const isSamePassword = await user.matchPassword(newPassword);
-  if (isSamePassword) {
-    res.status(400);
-    throw new Error('New password must be distinct from the previous one.');
-  }
+//   const isSamePassword = await user.matchPassword(newPassword);
+//   if (isSamePassword) {
+//     res.status(400);
+//     throw new Error('New password must be distinct from the previous one.');
+//   }
 
-  user.password = newPassword;
-  user.resetPasswordCode = undefined;
-  user.resetPasswordCodeExpires = undefined;
-  await user.save();
+//   user.password = newPassword;
+//   user.resetPasswordCode = undefined;
+//   user.resetPasswordCodeExpires = undefined;
+//   await user.save();
 
-  res.status(200).json({ message: 'Password reset successfully.' });
-});
+//   res.status(200).json({ message: 'Password reset successfully.' });
+// });
 
 export {
   authUser,
@@ -371,7 +397,7 @@ export {
   getUserByID,
   deleteUser,
   updateUser,
-  sendForgotPasswordEmail,
-  resetPassword,
-  verifyUser,
+  // sendForgotPasswordEmail,
+  // resetPassword,
+  // verifyUser,
 };

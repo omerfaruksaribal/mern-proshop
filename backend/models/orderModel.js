@@ -28,12 +28,12 @@ const orderSchema = new mongoose.Schema(
     },
     paymentMethod: {
       type: String,
-      required: false,
+      required: true,
     },
     paymentResult: {
       id: { type: String },
       status: { type: String },
-      updated_time: { type: String },
+      update_time: { type: String },
       email_address: { type: String },
     },
     itemsPrice: {
@@ -72,6 +72,16 @@ const orderSchema = new mongoose.Schema(
     deliveredAt: {
       type: Date,
     },
+    idempotencyKey: {
+      // Added idempotencyKey field
+      type: String,
+      required: true,
+      unique: true, // Ensure uniqueness
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now,
+    },
   },
   {
     timestamps: true,
@@ -79,4 +89,5 @@ const orderSchema = new mongoose.Schema(
 );
 
 const Order = mongoose.model('Order', orderSchema);
+
 export default Order;

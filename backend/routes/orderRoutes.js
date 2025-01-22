@@ -15,7 +15,7 @@ import {
 import { protect, admin } from '../middleware/authMiddleware.js';
 
 router.post('/create-checkout-session', protect, createCheckoutSession);
-router.get('/session-status', getStripeSessionStatus);
+router.get('/session-status', protect, getStripeSessionStatus);
 router.get('/order-by-session-id', protect, getOrderBySessionId);
 
 router
@@ -28,7 +28,7 @@ router.route('/mine').get(protect, getMyOrders);
 router
   .route('/:id')
   .get(protect, getOrderById)
-  .put(protect, admin, deleteOrder);
+  .delete(protect, admin, deleteOrder);
 
 router.route('/:id/deliver').put(protect, admin, updateOrderToDelivered);
 router.route('/:id/pay').put(protect, updateOrderToPaid);

@@ -1,19 +1,24 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Form, Button, Row, Col, FloatingLabel } from 'react-bootstrap';
-import { useSelector } from 'react-redux';
+import { Form, Button, Row, Col } from 'react-bootstrap';
+import { useDispatch, useSelector } from 'react-redux';
 import FormContainer from '../components/FormContainer';
-import Loader from '../components/Loader';
 import { useRegisterMutation } from '../slices/usersApiSlice';
 import { toast } from 'react-toastify';
+import { setCredentials } from '../slices/authSlice';
 
 const RegisterScreen = () => {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+  });
+
+  const { name, email, password, confirmPassword } = formData;
 
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   const [register, { isLoading }] = useRegisterMutation();
 
@@ -21,15 +26,22 @@ const RegisterScreen = () => {
 
   useEffect(() => {
     if (userInfo) {
-      navigate('/');
+      navigate('/'); // Redirect to an authenticated route
     }
-  }, [userInfo, navigate]);
+  }, [navigate, userInfo]);
+
+  const onChange = (e) => {
+    setFormData((prevState) => ({
+      ...prevState,
+      [e.target.name]: e.target.value,
+    }));
+  };
 
   const submitHandler = async (e) => {
     e.preventDefault();
 
-    if (password.length < 6) {
-      toast.warning('Password must be at least 6 characters.', {
+    if (!name || !email || !password) {
+      toast.warn('Please fill in all fields.', {
         theme: 'colored',
         position: 'top-center',
       });
@@ -44,6 +56,9 @@ const RegisterScreen = () => {
     } else {
       try {
         const response = await register({ name, email, password }).unwrap();
+
+        // Commented out verification navigation and token
+        /*
         navigate('/verify', {
           state: {
             name,
@@ -53,6 +68,15 @@ const RegisterScreen = () => {
           },
         });
         toast.success(`Verification code sent to ${email}.`, {
+          theme: 'colored',
+          position: 'top-center',
+        });
+        */
+
+        // Automatically log in the user after registration
+        dispatch(setCredentials({ ...response }));
+        navigate('/'); // Redirect to an authenticated page
+        toast.success(`Registration successful. Welcome, ${name}!`, {
           theme: 'colored',
           position: 'top-center',
         });
@@ -72,76 +96,72 @@ const RegisterScreen = () => {
     <FormContainer>
       <h1>Sign Up</h1>
       <Form onSubmit={submitHandler}>
-        <FloatingLabel
-          controlId="floatingInput"
-          label="Full Name"
-          className="mb-3 text-black"
-        >
+        {/* Name Field */}
+        <Form.Group controlId="name">
+          <Form.Label>Name</Form.Label>
           <Form.Control
             type="text"
-            placeholder="your name"
+            placeholder="Enter your name"
+            name="name"
             value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="mb-3"
-          />
-        </FloatingLabel>
-        <FloatingLabel
-          controlId="floatingInput"
-          label="Email Address"
-          className="mb-3"
-        >
+            onChange={onChange}
+            required
+          ></Form.Control>
+        </Form.Group>
+
+        {/* Email Field */}
+        <Form.Group controlId="email" className="my-3">
+          <Form.Label>Email Address</Form.Label>
           <Form.Control
             type="email"
-            placeholder="name@example.com"
+            placeholder="Enter your email"
+            name="email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="mb-3"
-          />
-        </FloatingLabel>
-        <FloatingLabel controlId="floatingPassword" label="Password">
-          <Form.Control
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="mb-3"
-            style={{ letterSpacing: 2 }}
-          />
-        </FloatingLabel>
-        <FloatingLabel
-          controlId="floatingInput"
-          label="Confirm Password"
-          className="mb-3"
-        >
-          <Form.Control
-            type="password"
-            placeholder="Confirm Password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            className="mb-3"
-            style={{ letterSpacing: 2 }}
-          />
-        </FloatingLabel>
+            onChange={onChange}
+            required
+          ></Form.Control>
+        </Form.Group>
 
+        {/* Password Field */}
+        <Form.Group controlId="password" className="my-3">
+          <Form.Label>Password</Form.Label>
+          <Form.Control
+            type="password"
+            placeholder="Enter a password"
+            name="password"
+            value={password}
+            onChange={onChange}
+            required
+          ></Form.Control>
+        </Form.Group>
+
+        {/* Confirm Password Field */}
+        <Form.Group controlId="confirmPassword" className="my-3">
+          <Form.Label>Confirm Password</Form.Label>
+          <Form.Control
+            type="password"
+            placeholder="Confirm your password"
+            name="confirmPassword"
+            value={confirmPassword}
+            onChange={onChange}
+            required
+          ></Form.Control>
+        </Form.Group>
+
+        {/* Submit Button */}
         <Button
           type="submit"
-          className="px-3 py-2 mt-2 bg-primary fw-bold"
+          variant="primary"
+          className="mt-4"
           disabled={isLoading}
         >
-          Sign Up
+          {isLoading ? 'Registering...' : 'Register'}
         </Button>
-
-        {isLoading && <Loader />}
       </Form>
 
       <Row className="py-3">
         <Col>
-          Already have an account? {'  '}
-          <span>
-            <b>
-              <Link to="/login">Sign In</Link>
-            </b>
-          </span>
+          Have an Account? <Link to="/login">Login</Link>
         </Col>
       </Row>
     </FormContainer>

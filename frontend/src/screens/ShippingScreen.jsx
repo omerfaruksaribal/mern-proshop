@@ -76,7 +76,7 @@ const ShippingScreen = () => {
 
         <Form onSubmit={submitHandler}>
           <Form.Group controlId="country" className="my-2">
-            <Form.Label>City</Form.Label>
+            <Form.Label>Country</Form.Label>
             <Form.Control
               type="text"
               placeholder="Enter the country"

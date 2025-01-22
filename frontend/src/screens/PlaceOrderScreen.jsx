@@ -1,185 +1,204 @@
-import { useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux';
-import { Button, Row, Col, ListGroup, Image, Card } from 'react-bootstrap';
-import { toast } from 'react-toastify';
-import CheckoutSteps from '../components/CheckoutSteps';
-import Message from '../components/Message';
-import Loader from '../components/Loader';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useSelector, useDispatch } from 'react-redux';
+import { Button, Row, Col, ListGroup, Card, Form } from 'react-bootstrap';
 import { useCreateOrderMutation } from '../slices/ordersApiSlice';
 import { clearCartItems } from '../slices/cartSlice';
+import CheckoutSteps from '../components/CheckoutSteps';
+import { toast } from 'react-toastify';
+import Loader from '../components/Loader';
+import Message from '../components/Message';
+import { v4 as uuidv4 } from 'uuid';
+import { debounce } from 'lodash';
 
 const PlaceOrderScreen = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+  const [idempotencyKey, setIdempotencyKey] = useState('');
+
   const cart = useSelector((state) => state.cart);
   const user = useSelector((state) => state.auth.userInfo);
 
   const [createOrder, { isLoading, error }] = useCreateOrderMutation();
 
   useEffect(() => {
-    if (!cart.shippingAddress.address) {
-      navigate('/shipping');
-    } else if (!cart.paymentMethod) {
+    if (!cart.paymentMethod) {
       navigate('/payment');
     }
-  }, [cart.shippingAddress.address, cart.paymentMethod, navigate]);
+  }, [cart.paymentMethod, navigate]);
 
-  const dispatch = useDispatch();
+  useEffect(() => {
+    // Generate a unique idempotency key when the component mounts
+    const key = uuidv4();
+    setIdempotencyKey(key);
+  }, []);
 
-  const placeOrderHandler = async () => {
+  const placeOrderHandler = useCallback(async () => {
+    if (isPlacingOrder) return; // Prevent multiple submissions
+    setIsPlacingOrder(true);
+
     try {
-      const res = await createOrder({
+      const orderData = {
         orderItems: cart.cartItems,
         shippingAddress: cart.shippingAddress,
         paymentMethod: cart.paymentMethod,
         itemsPrice: cart.itemsPrice,
-        shippingPrice: cart.shippingPrice,
         taxPrice: cart.taxPrice,
+        shippingPrice: cart.shippingPrice,
         totalPrice: cart.totalPrice,
-      }).unwrap();
+        idempotencyKey, // Include the idempotency key
+      };
+
+      const order = await createOrder(orderData).unwrap();
+
       dispatch(clearCartItems());
-      navigate(`/order/${res._id}`);
-    } catch (error) {
-      toast.error(error, {
-        theme: 'colored',
-        position: 'top-center',
-      });
+
+      navigate(`/order/${order._id}`);
+
+      toast.success('Order placed successfully!');
+    } catch (err) {
+      toast.error(err?.data?.message || err.error);
+    } finally {
+      setIsPlacingOrder(false);
     }
-  };
+  }, [isPlacingOrder, cart, createOrder, dispatch, navigate, idempotencyKey]);
+
+  // Memoize the debounced function to prevent ESLint warning
+  const debouncedPlaceOrder = useMemo(
+    () => debounce(() => placeOrderHandler(), 500),
+    [placeOrderHandler]
+  );
+
+  const submitHandler = useCallback(
+    (e) => {
+      e.preventDefault();
+      debouncedPlaceOrder();
+    },
+    [debouncedPlaceOrder]
+  );
+
+  // Cleanup debounce on unmount
+  useEffect(() => {
+    return () => {
+      debouncedPlaceOrder.cancel();
+    };
+  }, [debouncedPlaceOrder]);
 
   return (
     <>
       <CheckoutSteps step1 step2 step3 step4 />
-
       <Row>
         <Col md={8}>
+          {/* Order details components */}
           <ListGroup variant="flush">
             <ListGroup.Item>
-              <h2>Address & Custome Information</h2>
+              <h2>Shipping</h2>
               <p>
-                <strong>Address: </strong>
-                {cart.shippingAddress.address}, {cart.shippingAddress.city}{' '}
-                {cart.shippingAddress.postalCode},{' '}
+                <strong>Address:</strong> {cart.shippingAddress.address},{' '}
+                {cart.shippingAddress.city} {cart.shippingAddress.postalCode},{' '}
                 {cart.shippingAddress.country}
-              </p>
-              <p>
-                <strong>Name: </strong>
-                {user.name}
-              </p>
-              <p>
-                <strong>Email: </strong>
-                {user.email}
               </p>
             </ListGroup.Item>
 
             <ListGroup.Item>
               <h2>Payment Method</h2>
-              <p>
-                <strong>Method: </strong>
-                {cart.paymentMethod}
-              </p>
+              <strong>Method:</strong> {cart.paymentMethod}
             </ListGroup.Item>
 
             <ListGroup.Item>
-              <h2>Items to be ordered</h2>
-              <p>
-                {cart.cartItems.length === 0 ? (
-                  <Message>Your cart is empty.</Message>
-                ) : (
-                  <ListGroup>
-                    {cart.cartItems.map((item, index) => (
-                      <ListGroup.Item key={index}>
-                        <Row>
-                          <Col md={2}>
-                            <Image
-                              src={item.image}
-                              alt={item.name}
-                              fluid
-                              rounded
-                            />
-                          </Col>
-
-                          <Col md={7}>
-                            <Link to={`/products/${item.product}`}>
-                              {item.name}
-                            </Link>
-                          </Col>
-
-                          <Col md={3}>
-                            {item.qty} x ${item.price} = $
-                            {(item.qty * (item.price * 100)) / 100}
-                          </Col>
-                        </Row>
-                      </ListGroup.Item>
-                    ))}
-                  </ListGroup>
-                )}
-              </p>
+              <h2>Order Items</h2>
+              {cart.cartItems.length === 0 ? (
+                <Message>Your cart is empty</Message>
+              ) : (
+                <ListGroup variant="flush">
+                  {cart.cartItems.map((item, index) => (
+                    <ListGroup.Item key={index}>
+                      <Row>
+                        <Col md={1}>
+                          <img
+                            src={item.image}
+                            alt={item.name}
+                            className="rounded img-fluid"
+                          />
+                        </Col>
+                        <Col>
+                          <a href={`/product/${item.product}`}>{item.name}</a>
+                        </Col>
+                        <Col md={4}>
+                          {item.qty} x ${item.price} = $
+                          {(item.qty * item.price).toFixed(2)}
+                        </Col>
+                      </Row>
+                    </ListGroup.Item>
+                  ))}
+                </ListGroup>
+              )}
             </ListGroup.Item>
           </ListGroup>
         </Col>
-
         <Col md={4}>
           <Card>
             <ListGroup variant="flush">
               <ListGroup.Item>
                 <h2>Order Summary</h2>
-              </ListGroup.Item>
-
-              <ListGroup.Item>
-                <Row>
-                  <Col>Item Cost: </Col>
-                  <Col>{cart.itemsPrice} TL</Col>
-                </Row>
-              </ListGroup.Item>
-
-              <ListGroup.Item>
-                <Row>
-                  <Col>Shipping Cost: </Col>
-                  <Col>{cart.shippingPrice} TL</Col>
-                </Row>
-              </ListGroup.Item>
-
-              <ListGroup.Item>
-                <Row>
-                  <Col>Tax (15%): </Col>
-                  <Col>{cart.taxPrice} TL</Col>
-                </Row>
-              </ListGroup.Item>
-
-              <ListGroup.Item>
-                <Row>
-                  <Col>
-                    <strong>Total: </strong>
-                  </Col>
-                  <Col>
-                    <strong>${cart.totalPrice}</strong>
-                  </Col>
-                </Row>
-              </ListGroup.Item>
-
-              <ListGroup.Item>
-                {error && (
-                  <Message variant="danger">{error.data.message}</Message>
+                {user && (
+                  <p>
+                    <strong>User:</strong> {user.name} ({user.email})
+                  </p>
                 )}
               </ListGroup.Item>
-
+              {/* Items Price */}
               <ListGroup.Item>
-                <Button
-                  type="button"
-                  className="btn-block"
-                  disabled={cart.cartItems.length === 0}
-                  onClick={placeOrderHandler}
-                >
-                  Order Now
-                </Button>
-
-                {isLoading && <Loader />}
+                <Row>
+                  <Col>Items</Col>
+                  <Col>${cart.itemsPrice.toFixed(2)}</Col>
+                </Row>
+              </ListGroup.Item>
+              {/* Shipping Price */}
+              <ListGroup.Item>
+                <Row>
+                  <Col>Shipping</Col>
+                  <Col>${cart.shippingPrice.toFixed(2)}</Col>
+                </Row>
+              </ListGroup.Item>
+              {/* Tax Price */}
+              <ListGroup.Item>
+                <Row>
+                  <Col>Tax</Col>
+                  <Col>${cart.taxPrice.toFixed(2)}</Col>
+                </Row>
+              </ListGroup.Item>
+              {/* Total Price */}
+              <ListGroup.Item>
+                <Row>
+                  <Col>Total</Col>
+                  <Col>${cart.totalPrice.toFixed(2)}</Col>
+                </Row>
+              </ListGroup.Item>
+              {/* Place Order Button */}
+              <ListGroup.Item>
+                {/* Wrap the button in a Form to handle submission */}
+                <Form onSubmit={submitHandler}>
+                  <Button
+                    type="submit"
+                    className="btn-block"
+                    disabled={
+                      cart.cartItems.length === 0 || isLoading || isPlacingOrder
+                    }
+                  >
+                    {isLoading || isPlacingOrder
+                      ? 'Placing Order...'
+                      : 'Place Order'}
+                  </Button>
+                </Form>
               </ListGroup.Item>
             </ListGroup>
           </Card>
         </Col>
       </Row>
+      {isLoading && <Loader />}
+      {error && <Message variant="danger">{error}</Message>}
     </>
   );
 };
