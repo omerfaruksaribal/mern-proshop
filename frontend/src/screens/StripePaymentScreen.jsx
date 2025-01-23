@@ -12,9 +12,11 @@ import {
   useCreateOrderMutation,
   useGetOrderDetailsQuery,
 } from '../slices/ordersApiSlice';
+import dotenv from 'dotenv';
+dotenv.config();
 
 const stripePromise = loadStripe(
-  'pk_test_51NP0AjCyPguZAA3aDoMmhrXqhJBd0qex5wAwTbOEgFv45wtCMNOIGhM7aCipm2YoeQMutDghbwHyfVBfNlP2B5Qr00TmJlDjLe'
+  `${process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY}`
 );
 
 export const CheckoutForm = () => {
