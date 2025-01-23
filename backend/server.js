@@ -16,7 +16,7 @@ import { fileURLToPath } from 'url';
 
 connectDB();
 
-const port = process.env.PORT || 8000;
+const port = process.env.REACT_APP_PORT || 8001;
 const app = express();
 
 app.use(cors());
@@ -34,7 +34,7 @@ app.use('/api/upload', uploadRoutes);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-if (process.env.REACT_NODE_ENV === 'production') {
+if (process.env.REACT_APP_NODE_ENV === 'production') {
   // Serve compiled React bundle
   app.use(express.static(path.join(__dirname, '../frontend/build')));
 
@@ -55,6 +55,6 @@ app.use(errorHandler);
 
 app.listen(port, () => {
   console.log(
-    `Server running in ${process.env.REACT_NODE_ENV} mode on port ${port}`
+    `Server running in ${process.env.REACT_APP_NODE_ENV} mode on port ${port}`
   );
 });

@@ -49,7 +49,7 @@ const authUser = asyncHandler(async (req, res) => {
 //       user,
 //       activationCode,
 //     },
-//     process.env.JWT_SECRET,
+//     process.env.REACT_APP_JWT_SECRET
 //     {
 //       expiresIn: '5m',
 //     }
@@ -137,7 +137,7 @@ const registerUser = asyncHandler(async (req, res) => {
 //   try {
 //     const { activation_token, activation_code } = req.body;
 
-//     const newUser = jwt.verify(activation_token, process.env.JWT_SECRET);
+//     const newUser = jwt.verify(activation_token, process.env.REACT_APP_JWT_SECRET);
 
 //     if (newUser.activationCode !== activation_code) {
 //       throw new Error('Invalid activation code');

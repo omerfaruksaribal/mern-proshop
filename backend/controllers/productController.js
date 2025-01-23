@@ -7,7 +7,7 @@ import Product from '../models/productModel.js';
  * @access  Public
  */
 const getProducts = asyncHandler(async (req, res) => {
-  const pageSize = process.env.PAGINATION;
+  const pageSize = process.env.REACT_APP_PAGINATION;
   const page = Number(req.query.pageNumber) || 1;
 
   // Search bar functionality

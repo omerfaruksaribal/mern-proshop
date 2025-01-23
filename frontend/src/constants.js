@@ -1,5 +1,5 @@
 // export const BASE_URL =
-//   process.env.REACT_NODE_ENV === 'development' ? 'http://localhost:8000' : '';
+//   process.env.REACT_APP_NODE_ENV === 'development' ? 'http://localhost:8000' : '';
 export const BASE_URL = '';
 
 export const PRODUCTS_URL = '/api/products';

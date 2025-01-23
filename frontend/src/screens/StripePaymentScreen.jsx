@@ -12,8 +12,6 @@ import {
   useCreateOrderMutation,
   useGetOrderDetailsQuery,
 } from '../slices/ordersApiSlice';
-import dotenv from 'dotenv';
-dotenv.config();
 
 const stripePromise = loadStripe(
   `${process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY}`

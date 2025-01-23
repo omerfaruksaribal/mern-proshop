@@ -185,7 +185,7 @@ const createCheckoutSession = asyncHandler(async (req, res) => {
     }));
 
     const returnUrl =
-      process.env.REACT_NODE_ENV === 'production'
+      process.env.REACT_APP_NODE_ENV === 'production'
         ? `https://mern-proshop-jch2.onrender.com/return?session_id={CHECKOUT_SESSION_ID}`
         : `http://localhost:3000/return?session_id={CHECKOUT_SESSION_ID}`;
 

@@ -10,7 +10,7 @@ const errorHandler = (err, req, res, next) => {
 
   res.status(statusCode).json({
     message,
-    stack: process.env.REACT_NODE_ENV === 'production' ? '🥞' : err.stackpa,
+    stack: process.env.REACT_APP_NODE_ENV === 'production' ? '🥞' : err.stackpa,
   });
 };
 
